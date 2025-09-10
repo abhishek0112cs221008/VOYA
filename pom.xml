@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>VOYA</groupId>
@@ -6,20 +6,7 @@
   <version>0.0.1-SNAPSHOT</version>
   <packaging>war</packaging>
   
-   <dependencies>
-=======
-<project xmlns="http://maven.apache.org/POM/4.0.0" 
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>KiddyKart</groupId>
-  <artifactId>KiddyKart</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <packaging>war</packaging>
-  
   <dependencies>
->>>>>>> 6bc96840913ebe136a13342d4cd2304fdfc1d5a1
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
@@ -32,11 +19,6 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
-<<<<<<< HEAD
-
-=======
-  
->>>>>>> 6bc96840913ebe136a13342d4cd2304fdfc1d5a1
   <build>
     <plugins>
       <plugin>
@@ -52,9 +34,6 @@
       </plugin>
     </plugins>
   </build>
-<<<<<<< HEAD
 </project>
-=======
   
 </project>
->>>>>>> 6bc96840913ebe136a13342d4cd2304fdfc1d5a1
