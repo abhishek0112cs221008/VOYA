@@ -132,7 +132,7 @@ public class OrderServlet extends HttpServlet {
             if (totalItemsPurchased >= 10) {
                 UserDAO.updateMembershipStatus(userEmail, true);
                 session.setAttribute("isMember", true);
-                session.setAttribute("membershipMessage", " Congratulations! You are now a KiddyKart Member!");
+                session.setAttribute("membershipMessage", " Congratulations! You are now a VOYA Premium Member!");
             } else {
                  session.setAttribute("isMember", false);
             }
