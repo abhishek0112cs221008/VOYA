@@ -66,6 +66,7 @@ CREATE TABLE cart_items (
 
 SELECT * FROM users;
 ALTER TABLE users ADD is_mem22ber BOOLEAN DEFAULT FALSE;
+ALTER TABLE users RENAME COLUMN is_mem22ber TO is_member;
 UPDATE users SET role = "admin" where id = 1; -- admin pannel =>  pass = voya 
 
 
@@ -86,3 +87,14 @@ INSERT INTO products (name, category, price, quantity, image_url, description) V
 ('Eco Friendly Cotton Tote', 'Eco-Friendly Bags', 299.00, 20, 'https://images.pexels.com/photos/5709651/pexels-photo-5709651.jpeg', 'Durable and reusable cotton tote bag, perfect for eco-conscious shopping and daily use.'),
 ('Reusable Jute Shopping Bag', 'Eco-Friendly Bags', 67.00, 15, 'https://images.pexels.com/photos/4792667/pexels-photo-4792667.jpeg', 'Strong jute fiber bag offering an environmentally friendly alternative to plastic bags.'),
 ('Plant-Based Biodegradable Bag', 'Eco-Friendly Bags', 399.00, 10, 'https://images.pexels.com/photos/7564204/pexels-photo-7564204.jpeg', 'Innovative plant-based biodegradable shopping bag designed for sustainability and style.');
+
+
+ALTER TABLE products ADD COLUMN view_count INT DEFAULT 0;
+
+CREATE TABLE product_views (
+	id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT,
+    viewed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) 
+);
+SELECT * FROM product_views;

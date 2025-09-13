@@ -27,7 +27,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Your Cart - Voya</title>
+    <title>Your Cart - VOYA</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="assets/logo2.png">
 
@@ -135,7 +135,7 @@
 <body class="light-mode">
 
 <div class="header">
-    <h1><i class="bi bi-bag-check-fill"></i> Your Voya Cart</h1>
+    <h1><i class="bi bi-bag-check-fill"></i> Your VOYA Bag</h1>
     <div>
         <a href="../HomeServlet" class="btn btn-dark"><i class="bi bi-arrow-left"></i> Back to Home</a>
         <button id="themeToggle" class="btn btn-outline-dark"><i class="bi bi-moon-fill"></i></button>
@@ -200,8 +200,9 @@
     <%
         double discountAmount = 0;
         double finalTotal = subtotal;
+        double deliveryCharge = 50.00;
         if (isMember) {
-            discountAmount = subtotal * 0.20;
+            discountAmount = subtotal * 0.15;
             finalTotal = subtotal - discountAmount;
         }
     %>
@@ -220,12 +221,23 @@
         <% } %>
         <div class="d-flex justify-content-between mb-3">
             <span>Delivery Charges</span>
-            <span class="text-success">FREE</span>
+            <!-- <span class="text-success">FREE</span> -->
+            <% 
+            	if(finalTotal > 499) {
+            		deliveryCharge = 0;
+            %>
+            	<span class="text-success">FREE</span>
+           	<%
+            	} else {
+           	%>
+           		<span class="text-success">₹<%= deliveryCharge%></span>
+           	<%} %>
+            
         </div>
         <hr>
         <div class="d-flex justify-content-between fw-bold fs-5">
             <span>Total Amount</span>
-            <span>₹<%= String.format("%.2f", finalTotal) %></span>
+            <span>₹<%= String.format("%.2f", finalTotal + deliveryCharge) %></span>
         </div>
         <% if (!hasInsufficientStock) { %>
             <a href="checkout.jsp" class="btn btn-dark w-100 mt-3">Proceed to Checkout</a>

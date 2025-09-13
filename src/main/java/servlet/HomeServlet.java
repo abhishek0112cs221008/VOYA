@@ -1,6 +1,7 @@
 package servlet;
 
 import dao.DBConnection;
+import dao.ProductDAO;
 import model.Product;
 
 import javax.servlet.*;
@@ -13,41 +14,46 @@ import java.util.*;
 @WebServlet("/HomeServlet")
 public class HomeServlet extends HttpServlet {
 	
+    private ProductDAO productDAO;
+
+    @Override
+    public void init() throws ServletException {
+        super.init();
+        this.productDAO = new ProductDAO();
+    }
+	
 	@Override
     protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-       
-    	Connection con = DBConnection.getConnection();
-    	Map<String, List<Product>> productByCategory = new LinkedHashMap<>();
-    	
-    	try {
-    		String sql = "SELECT * FROM products ORDER BY category";
-    		PreparedStatement ps = con.prepareStatement(sql);
-    		ResultSet rs = ps.executeQuery();
-    		
-    		while(rs.next()) {
-    			String category = rs.getString("category");
-    			Product p = new Product();
-    			
-    			p.setId(rs.getInt("id"));
-    			p.setName(rs.getString("name"));
-    			p.setCategory(category);
-    			p.setPrice(rs.getDouble("price"));
-    			p.setImageUrl(rs.getString("image_url"));
-    			p.setDescription(rs.getString("description"));
-    			p.setQuantity(rs.getInt("quantity"));
-    			
-    			productByCategory.computeIfAbsent(category, k -> new ArrayList<>()).add(p);
-    			
-    			
-    			
-    		}
-		}
-    	catch(Exception e) {
-    		e.printStackTrace();
-    	}
-    	
-        req.setAttribute("productByCategory", productByCategory);
+        
+        // Ensure user is logged in
+        String userEmail = (String) req.getSession().getAttribute("userEmail");
+        if (userEmail == null) {
+            res.sendRedirect("index.html");
+            return;
+        }
+
+        // Fetch all products or search results
+        String search = req.getParameter("search");
+        List<Product> products;
+        if (search != null && !search.isEmpty()) {
+            products = productDAO.searchProducts(search);
+        } else {
+            products = productDAO.getAllProducts();
+        }
+
+        // Organize products by category
+        Map<String, List<Product>> categoryMap = new LinkedHashMap<>();
+        for (Product p : products) {
+            categoryMap.computeIfAbsent(p.getCategory(), k -> new ArrayList<>()).add(p);
+        }
+        
+        // Fetch most viewed products (top 5 as an example)
+        List<Product> topProducts = productDAO.getTopProductsByRecentViews(7 ,4);
+
+        req.setAttribute("products", products); // For total count
+        req.setAttribute("categoryMap", categoryMap);
+        req.setAttribute("topProducts", topProducts);
+        
         req.getRequestDispatcher("jsp/home.jsp").forward(req, res);
-	
     }
 }

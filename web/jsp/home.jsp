@@ -1,4 +1,3 @@
-
 <%@ page import="java.util.*, model.Product, dao.ProductDAO, dao.ReviewDAO" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" session="true" %>
 <%
@@ -19,10 +18,11 @@
         products = dao.getAllProducts();
     }
 
-    Map<String, List<Product>> categoryMap = new LinkedHashMap<>();
-    for (Product p : products) {
-        categoryMap.computeIfAbsent(p.getCategory(), k -> new ArrayList<>()).add(p);
-    }
+    // Using servlet attributes instead of re-fetching data
+    // The servlet now handles this logic
+    Map<String, List<Product>> categoryMap = (Map<String, List<Product>>) request.getAttribute("categoryMap");
+    List<Product> topProducts = (List<Product>) request.getAttribute("topProducts");
+    List<Product> allProducts = (List<Product>) request.getAttribute("products");
 
     String userEmail = (String) session.getAttribute("userEmail");
     if (userEmail == null) {
@@ -34,7 +34,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Voya – Home</title>
+    <title>VOYA - Home</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -43,7 +43,7 @@
      <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='15' fill='#000000' /><text x='50' y='65' font-family='Inter, sans-serif' font-size='40' font-weight='bold' fill='#FFFFFF' text-anchor='middle'>VOYA</text></svg>">
     <link rel="stylesheet" href="css/logo.css">
     <link rel="icon" href="assets/logo2.png">
-    
+    <link rel="stylesheet" href="css/home.css">
     <style>
         * {
             margin: 0;
@@ -888,7 +888,7 @@
     <!-- Results Header -->
     <div class="results-header">
         <span class="results-count">
-            You've viewed <%= products.stream().mapToInt(p -> 1).sum() %> of <%= products.stream().mapToInt(p -> 1).sum() %> products
+            You've viewed <%= allProducts.size() %> of <%= allProducts.size() %> products
         </span>
         
         <div class="view-toggles">
@@ -906,96 +906,179 @@
             </button>
         </div>
     </div>
+    <% if (true || topProducts != null && !topProducts.isEmpty()) { %>
+        <div class="category-section">
+            <div class="category-header">
+                <h2 class="category-title">MOST VIEWED PRODUCTS</h2>
+                <p class="category-subtitle">The top sellers and customer favorites</p>
+            </div>
+            
+            <div class="products-grid">
+                <% for (Product p : topProducts) {
+                    double avgRating = reviewDAO.getAverageRatingForProduct(p.getId());
+                    int reviewCount = reviewDAO.getReviewCountForProduct(p.getId());
+                    int productCount = p.getQuantity();
+                %>
+                <div class="product-item" data-price="<%= p.getPrice() %>" data-quantity="<%= productCount %>" data-category="<%= p.getCategory() %>">
+                    <div class="product-image-container">
+                        <img src="<%= p.getImageUrl() != null && !p.getImageUrl().isEmpty() ? p.getImageUrl() : "assets/no-image.png" %>"
+                             alt="<%= p.getName() %>" class="product-image"
+                             onerror="this.src='assets/no-image.png'">
+                        
+                        <!-- Stock Badges -->
+                        <% if (productCount == 0) { %>
+                            <div class="stock-badge sold-out">Sold Out</div>
+                        <% } else if (productCount < 5) { %>
+                            <div class="stock-badge low-stock">Only <%= productCount %> left</div>
+                        <% } %>
+                        
+                        <% if(p.getPrice() > 599.00) { %>    
+                            <div class="stock-badge free-shipping">Free Shipping</div>
+                        <% } %>
+                        
+                        <!-- Product Actions -->
+                        <div class="product-actions">
+                            <button class="action-btn" title="Add to Wishlist">
+                                <i class="fa-solid fa-heart"></i>
+                            </button>
+                            <button class="action-btn" title="Compare">
+                                <i class="fa-solid fa-exchange-alt"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Quick View -->
+                        <button class="quick-view-btn" onclick="handleQuickView(<%= p.getId() %>, 'jsp/productDetails.jsp?id=<%= p.getId() %>')">
+                            Quick View
+                        </button>
+                    </div>
+                    
+                    <div class="product-info">
+                        <div class="product-brand">VOYA</div>
+                        <div class="product-title"><%= p.getName() %></div>
+                        <div class="product-price">Rs. <%= String.format("%.2f", p.getPrice()) %></div>
+                        
+                        <!-- Color Options (if applicable) -->
+                        <div class="color-options">
+                            <div class="color-swatch color-red"></div>
+                            <div class="color-swatch color-coffee"></div>
+                            <div class="color-swatch color-yellow"></div>
+                        </div>
+                        
+                        <!-- Rating Display -->
+                        <% if (reviewCount > 0) { %>
+                            <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                                ⭐ <%= String.format("%.1f", avgRating) %> (<%= reviewCount %> reviews)
+                            </div>
+                        <% } %>
+                        
+                        <!-- Add to Cart Form -->
+                        <form method="post" action="CartServlet" class="add-to-cart-form">
+                            <input type="hidden" name="action" value="add">
+                            <input type="hidden" name="productId" value="<%= p.getId() %>">
+                            <button type="submit" class="add-cart-btn" <%= productCount == 0 ? "disabled" : "" %>>
+                                <% if (productCount == 0) { %>
+                                    Sold Out
+                                <% } else { %>
+                                    Add to Cart
+                                <% } %>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <% } %>
+            </div>
+        </div>
+    <% } %>
 
     <% if (categoryMap.isEmpty()) { %>
         <div class="no-products">
             <h3>No Products Found</h3>
             <p>Try adjusting your search or browse our categories.</p>
         </div>
-    <% } %>
-
-    <% for (Map.Entry<String, List<Product>> entry : categoryMap.entrySet()) { %>
-    <div class="category-section">
-        <div class="category-header">
-            <h2 class="category-title"><%= entry.getKey().toUpperCase() %></h2>
-            <p class="category-subtitle">Discover our collection</p>
-        </div>
-        
-        <div class="products-grid">
-            <% for (Product p : entry.getValue()) {
-                double avgRating = reviewDAO.getAverageRatingForProduct(p.getId());
-                int reviewCount = reviewDAO.getReviewCountForProduct(p.getId());
-                int productCount = p.getQuantity();
-            %>
-            <div class="product-item" data-price="<%= p.getPrice() %>" data-quantity="<%= productCount %>" data-category="<%= p.getCategory() %>">
-                <div class="product-image-container">
-                    <img src="<%= p.getImageUrl() != null && !p.getImageUrl().isEmpty() ? p.getImageUrl() : "assets/no-image.png" %>"
-                         alt="<%= p.getName() %>" class="product-image"
-                         onerror="this.src='assets/no-image.png'">
-                    
-                    <!-- Stock Badges -->
-                    <% if (productCount == 0) { %>
-                        <div class="stock-badge sold-out">Sold Out</div>
-                    <% } else if (productCount < 5) { %>
-                        <div class="stock-badge low-stock">Only <%= productCount %> left</div>
-                    <% } %>
-                    
-                    <% if(p.getPrice() > 599.00) { %>    
-                        <div class="stock-badge free-shipping">Free Shipping</div>
-                    <% } %>
-                    
-                    <!-- Product Actions -->
-                    <div class="product-actions">
-                        <button class="action-btn" title="Add to Wishlist">
-                            <i class="fa-solid fa-heart"></i>
-                        </button>
-                        <button class="action-btn" title="Compare">
-                            <i class="fa-solid fa-exchange-alt"></i>
-                        </button>
-                    </div>
-                    
-                    <!-- Quick View -->
-                    <button class="quick-view-btn" onclick="window.location.href='jsp/productDetails.jsp?id=<%= p.getId() %>'">
-                        Quick View
-                    </button>
-                </div>
-                
-                <div class="product-info">
-                    <div class="product-brand">VOYA</div>
-                    <div class="product-title"><%= p.getName() %></div>
-                    <div class="product-price">Rs. <%= String.format("%.2f", p.getPrice()) %></div>
-                    
-                    <!-- Color Options (if applicable) -->
-                    <div class="color-options">
-                        <div class="color-swatch color-red"></div>
-                        <div class="color-swatch color-coffee"></div>
-                        <div class="color-swatch color-yellow"></div>
-                    </div>
-                    
-                    <!-- Rating Display -->
-                    <% if (reviewCount > 0) { %>
-                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
-                            ⭐ <%= String.format("%.1f", avgRating) %> (<%= reviewCount %> reviews)
-                        </div>
-                    <% } %>
-                    
-                    <!-- Add to Cart Form -->
-                    <form method="post" action="CartServlet" class="add-to-cart-form">
-                        <input type="hidden" name="action" value="add">
-			<input type="hidden" name="productId" value="<%= p.getId() %>">
-                        <button type="submit" class="add-cart-btn" <%= productCount == 0 ? "disabled" : "" %>>
-                            <% if (productCount == 0) { %>
-                                Sold Out
-                            <% } else { %>
-                                Add to Cart
-                            <% } %>
-                        </button>
-                    </form>
-                </div>
+    <% } else { %>
+        <% for (Map.Entry<String, List<Product>> entry : categoryMap.entrySet()) { %>
+        <div class="category-section">
+            <div class="category-header">
+                <h2 class="category-title"><%= entry.getKey().toUpperCase() %></h2>
+                <p class="category-subtitle">Discover our collection</p>
             </div>
-            <% } %>
+            
+            <div class="products-grid">
+                <% for (Product p : entry.getValue()) {
+                    double avgRating = reviewDAO.getAverageRatingForProduct(p.getId());
+                    int reviewCount = reviewDAO.getReviewCountForProduct(p.getId());
+                    int productCount = p.getQuantity();
+                %>
+                <div class="product-item" data-price="<%= p.getPrice() %>" data-quantity="<%= productCount %>" data-category="<%= p.getCategory() %>">
+                    <div class="product-image-container">
+                        <img src="<%= p.getImageUrl() != null && !p.getImageUrl().isEmpty() ? p.getImageUrl() : "assets/no-image.png" %>"
+                             alt="<%= p.getName() %>" class="product-image"
+                             onerror="this.src='assets/no-image.png'">
+                        
+                        <!-- Stock Badges -->
+                        <% if (productCount == 0) { %>
+                            <div class="stock-badge sold-out">Sold Out</div>
+                        <% } else if (productCount < 5) { %>
+                            <div class="stock-badge low-stock">Only <%= productCount %> left</div>
+                        <% } %>
+                        
+                        <% if(p.getPrice() > 599.00) { %>    
+                            <div class="stock-badge free-shipping">Free Shipping</div>
+                        <% } %>
+                        
+                        <!-- Product Actions -->
+                        <div class="product-actions">
+                            <button class="action-btn" title="Add to Wishlist">
+                                <i class="fa-solid fa-heart"></i>
+                            </button>
+                            <button class="action-btn" title="Compare">
+                                <i class="fa-solid fa-exchange-alt"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Quick View -->
+                        <button class="quick-view-btn" onclick="handleQuickView(<%= p.getId() %>, 'jsp/productDetails.jsp?id=<%= p.getId() %>')">
+                            Quick View
+                        </button>
+                    </div>
+                    
+                    <div class="product-info">
+                        <div class="product-brand">VOYA</div>
+                        <div class="product-title"><%= p.getName() %></div>
+                        <div class="product-price">Rs. <%= String.format("%.2f", p.getPrice()) %></div>
+                        
+                        <!-- Color Options (if applicable) -->
+                        <div class="color-options">
+                            <div class="color-swatch color-red"></div>
+                            <div class="color-swatch color-coffee"></div>
+                            <div class="color-swatch color-yellow"></div>
+                        </div>
+                        
+                        <!-- Rating Display -->
+                        <% if (reviewCount > 0) { %>
+                            <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                                ⭐ <%= String.format("%.1f", avgRating) %> (<%= reviewCount %> reviews)
+                            </div>
+                        <% } %>
+                        
+                        <!-- Add to Cart Form -->
+                        <form method="post" action="CartServlet" class="add-to-cart-form">
+                            <input type="hidden" name="action" value="add">
+                            <input type="hidden" name="productId" value="<%= p.getId() %>">
+                            <button type="submit" class="add-cart-btn" <%= productCount == 0 ? "disabled" : "" %>>
+                                <% if (productCount == 0) { %>
+                                    Sold Out
+                                <% } else { %>
+                                    Add to Cart
+                                <% } %>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <% } %>
+            </div>
         </div>
-    </div>
+        <% } %>
     <% } %>
     
     <!-- Load More Button (Static for now) -->
@@ -1012,189 +1095,6 @@
     <p class="footer-text">© 2025 Voya. All Rights Reserved.</p>
 </footer>
 <script>
-//    
-//    
-//    document.addEventListener('DOMContentLoaded', () => {
-//    // Search Modal
-//    const searchIcon = document.getElementById('searchIcon');
-//    const searchModal = document.getElementById('searchModal');
-//    
-//    searchIcon.addEventListener('click', () => {
-//        searchModal.style.display = 'block';
-//    });
-//    
-//    window.closeSearch = () => {
-//        searchModal.style.display = 'none';
-//    };
-//    
-//    // Close modal on outside click
-//    searchModal.addEventListener('click', (e) => {
-//        if (e.target === searchModal) {
-//            closeSearch();
-//        }
-//    });
-//    
-//    // Theme Toggle
-//    const themeToggle = document.getElementById('themeToggle');
-//    if (themeToggle) {
-//        themeToggle.addEventListener('click', () => {
-//            document.body.classList.toggle('dark-mode');
-//            const isDark = document.body.classList.contains('dark-mode');
-//            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-//            themeToggle.innerHTML = isDark ? 
-//                '<i class="fa-solid fa-sun" style="font-size: 18px; color: #e5e5e5;"></i>' : 
-//                '<i class="fa-solid fa-moon" style="font-size: 18px; color: #000;"></i>';
-//        });
-//    }
-//
-//    // Load saved theme
-//    const savedTheme = localStorage.getItem('theme') || 'light';
-//    document.body.className = savedTheme + '-mode';
-//    if (themeToggle && savedTheme === 'dark') {
-//        themeToggle.innerHTML = '<i class="fa-solid fa-sun" style="font-size: 18px; color: #e5e5e5;"></i>';
-//    }
-//
-//    // View Toggle Functionality
-//    const viewBtns = document.querySelectorAll('.view-btn');
-//    const productsGrid = document.querySelector('.products-grid');
-//    
-//    viewBtns.forEach((btn, index) => {
-//        btn.addEventListener('click', () => {
-//            viewBtns.forEach(b => b.classList.remove('active'));
-//            btn.classList.add('active');
-//            
-//            switch(index) {
-//                case 0: // List view
-//                    productsGrid.style.gridTemplateColumns = '1fr';
-//                    break;
-//                case 1: // Small grid
-//                    productsGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
-//                    break;
-//                case 2: // Default grid
-//                    productsGrid.style.gridTemplateColumns = 'repeat(4, 1fr)';
-//                    break;
-//                case 3: // Large grid
-//                    productsGrid.style.gridTemplateColumns = 'repeat(5, 1fr)';
-//                    break;
-//            }
-//        });
-//    });
-//
-//    // Add to Cart Functionality (Updated to fix bugs and improve reliability)
-////    const addToCartForms = document.querySelectorAll('.add-to-cart-form');
-////    addToCartForms.forEach(form => {
-////        form.addEventListener('submit', async function(e) {
-////            // Prevent the default form submission (page reload)
-////            e.preventDefault();
-////
-////            const submitBtn = this.querySelector('.add-cart-btn');
-////            const originalText = submitBtn.innerHTML;
-////            
-////            // Check if the button is already disabled (e.g., sold out or currently processing)
-////            if (submitBtn.disabled) return;
-////            
-////            submitBtn.innerHTML = 'Adding...';
-////            submitBtn.disabled = true;
-////
-////            // Get the product ID from the hidden input
-////            const productIdInput = this.querySelector('input[name="productId"]');
-////            const actionInput = this.querySelector('input[name="action"]');
-////            const productId = productIdInput ? productIdInput.value : '';
-////            const action = actionInput ? actionInput.value : '';
-////
-////            // Construct URL-encoded form data manually
-////            const params = new URLSearchParams();
-////            params.append('productId', productId);
-////            params.append('action', action);
-////
-////            try {
-////                // Send an asynchronous request to the server with a URL-encoded body
-////                const response = await fetch('CartServlet', {
-////                    method: 'POST',
-////                    headers: {
-////                        'Content-Type': 'application/x-www-form-urlencoded'
-////                    },
-////                    body: params
-////                });
-////
-////                if (response.ok) {
-////                    const newCartCount = await response.text();
-////                    const cartCountSpan = document.querySelector('.cart-count');
-////                    
-////                    // Check if the response is a valid number before updating the UI
-////                    if (cartCountSpan && !isNaN(parseInt(newCartCount))) {
-////                        cartCountSpan.textContent = newCartCount;
-////                        submitBtn.innerHTML = 'Added ✓';
-////                        submitBtn.style.background = '#00aa44';
-////                    } else {
-////                        throw new Error('Server response was not a valid number.');
-////                    }
-////                } else {
-////                    console.error('Failed to add item to cart:', response.statusText);
-////                    submitBtn.innerHTML = 'Failed!';
-////                    submitBtn.style.background = '#dc2626';
-////                }
-////            } catch (error) {
-////                console.error('Error adding to cart. Please check your network and server response.', error);
-////                submitBtn.innerHTML = 'Error!';
-////                submitBtn.style.background = '#dc2626';
-////            } finally {
-////                // Reset the button to its original state after a short delay
-////                setTimeout(() => {
-////                    submitBtn.innerHTML = originalText;
-////                    submitBtn.style.background = '#000';
-////                    submitBtn.disabled = false;
-////                }, 1500);
-////            }
-////        });
-////    });
-////
-////    // Color Swatch Selection
-////    const colorSwatches = document.querySelectorAll('.color-swatch');
-////    colorSwatches.forEach(swatch => {
-////        swatch.addEventListener('click', function() {
-////            const parent = this.parentElement;
-////            parent.querySelectorAll('.color-swatch').forEach(s => {
-////                s.style.border = '1px solid #e5e5e5';
-////            });
-////            this.style.border = '2px solid #000';
-////        });
-////    });
-////
-////    // Smooth scroll for better UX
-////    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-////        anchor.addEventListener('click', function (e) {
-////            e.preventDefault();
-////            const target = document.querySelector(this.getAttribute('href'));
-////            if (target) {
-////                target.scrollIntoView({
-////                    behavior: 'smooth',
-////                    block: 'start'
-////                });
-////            }
-////        });
-////    });
-//
-//    // Load More Button
-//    const loadMoreBtn = document.querySelector('.load-more-btn');
-//    if (loadMoreBtn) {
-//        // This is a placeholder. In a real application, you would
-//        // use an AJAX request to fetch more products from the server.
-//        // For this example, we will just simulate a loading state.
-//        loadMoreBtn.addEventListener('click', () => {
-//            loadMoreBtn.textContent = 'Loading...';
-//            loadMoreBtn.disabled = true;
-//
-//            setTimeout(() => {
-//                // Simulate successful loading
-//                console.log("More products loaded.");
-//                // In a real scenario, you'd append the new product HTML here.
-//                loadMoreBtn.textContent = 'No More Products';
-//                loadMoreBtn.disabled = true;
-//            }, 1500);
-//        });
-//    }
-//});
 
 document.addEventListener('DOMContentLoaded', () => {
     // Search Modal
@@ -1701,6 +1601,33 @@ document.addEventListener('DOMContentLoaded', function() {
     updateActiveCategory();
 });
 
+// New JavaScript function to handle quick view clicks
+function handleQuickView(productId, url) {
+    // Send an asynchronous request to update the view count
+    fetch('ProductViewServlet', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'productId=' + productId
+    })
+    .then(response => {
+        if (!response.ok) {
+            console.error('Failed to update product view count.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    })
+    .finally(() => {
+        // Navigate to the product details page regardless of the success of the view count update
+        window.location.href = url;
+    });
+}
 
 
 </script>
+
+
+</body>
+</html>
