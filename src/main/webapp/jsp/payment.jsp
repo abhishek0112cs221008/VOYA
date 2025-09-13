@@ -20,6 +20,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         :root {
@@ -69,6 +70,16 @@
             font-size: 1.5rem;
         }
 
+        /* Mock Gateway Styles */
+        .mock-payment-container {
+            transition: all 0.5s ease-in-out;
+        }
+        
+        .progress-bar {
+            background-color: var(--primary-dark);
+            transition: width 0.3s ease;
+        }
+
         .dark-mode {
             --bg-light: #1a1a1a;
             --card-bg: #2b2b2b;
@@ -80,31 +91,98 @@
 </head>
 <body class="light-mode">
     <div class="payment-card">
-        <div class="payment-header border-bottom pb-3 mb-3">
-            <h2><i class="bi bi-wallet2"></i> Complete Payment</h2>
-        </div>
         
-        <div class="payment-details">
-            <p class="text-muted">Please make a payment to the UPI ID below to confirm your order.</p>
-            
-            <div class="upi-info text-start">
-                <div>UPI ID: <strong>abc@okbizaxis</strong></div>
-                <div class="mt-2">Amount: <span class="amount">?<%= totalAmount %></span></div>
+        <!-- Payment Details View -->
+        <div id="details-view" class="mock-payment-container">
+            <div class="payment-header border-bottom pb-3 mb-3">
+                <h2><i class="bi bi-wallet2"></i> Complete Payment</h2>
             </div>
             
-            <form action="../OrderServlet" method="post">
+            <div class="payment-details">
+                <p class="text-muted">Please make a payment to the UPI ID below to confirm your order.</p>
+                
+                <div class="upi-info text-start">
+                    <div>UPI ID: <strong>voya.pay@okbizaxis</strong></div>
+                    <div class="mt-2">Amount: <span class="amount">₹ <%= totalAmount %></span></div>
+                </div>
+                
+                <!-- This form will submit after the mock payment is complete -->
+                <form id="payment-form" action="../OrderServlet" method="post">
+                    <input type="hidden" name="paymentId" value="UPI-<%= System.currentTimeMillis() %>">
+                    <input type="hidden" name="amount" value="<%= totalAmount %>">
+                    <button type="button" onclick="startPayment()" class="btn btn-dark w-100 btn-lg">
+                        <i class="bi bi-play-circle"></i> Proceed to Pay
+                    </button>
+                </form>
+
+                <a href="cart.jsp" class="btn btn-link mt-3">Back to Cart</a>
+            </div>
+        </div>
+
+        <!-- Processing View (Hidden by default) -->
+        <div id="processing-view" class="mock-payment-container d-none">
+            <div class="payment-header border-bottom pb-3 mb-3">
+                <h2><i class="bi bi-arrow-repeat"></i> Processing...</h2>
+            </div>
+            
+            <div class="d-flex flex-column align-items-center justify-content-center pt-3">
+                <div class="spinner-border text-dark mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted">Please wait while we process your payment.</p>
+                <div class="progress w-100 mt-3" style="height: 12px;">
+                    <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success View (Hidden by default) -->
+        <div id="success-view" class="mock-payment-container d-none">
+            <div class="payment-header border-bottom pb-3 mb-3">
+                <h2 class="text-success"><i class="bi bi-check-circle-fill"></i> Payment Successful!</h2>
+            </div>
+            
+            <p class="text-muted">Your order has been placed successfully. Thank you for shopping with us!</p>
+            <form id="submit-order-form" action="../OrderServlet" method="post">
                 <input type="hidden" name="paymentId" value="UPI-<%= System.currentTimeMillis() %>">
                 <input type="hidden" name="amount" value="<%= totalAmount %>">
-                <button type="submit" class="btn btn-success w-100 btn-lg">
-                    <i class="bi bi-check-circle"></i> I Have Paid
+                <button type="submit" class="btn btn-success w-100 btn-lg mt-3">
+                    Go to Order Confirmation
                 </button>
             </form>
-
-            <a href="cart.jsp" class="btn btn-link mt-3">Back to Cart</a>
+            <a href="home.jsp" class="btn btn-link mt-2">Continue Shopping</a>
         </div>
     </div>
 
     <script>
+        function startPayment() {
+            const detailsView = document.getElementById('details-view');
+            const processingView = document.getElementById('processing-view');
+            const successView = document.getElementById('success-view');
+            const progressBar = document.getElementById('progress-bar');
+            
+            detailsView.classList.add('d-none');
+            processingView.classList.remove('d-none');
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 10;
+                progressBar.style.width = progress + '%';
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    
+                    // Simulate a slight delay before showing success
+                    setTimeout(() => {
+                        processingView.classList.add('d-none');
+                        successView.classList.remove('d-none');
+                        
+                        // Automatically submit the form to the OrderServlet
+                        document.getElementById('submit-order-form').submit();
+                    }, 1000);
+                }
+            }, 200);
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('theme') || 'light';
             if (savedTheme === 'dark') {
@@ -112,5 +190,6 @@
             }
         });
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
