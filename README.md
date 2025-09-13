@@ -59,7 +59,7 @@ To get a local copy up and running, follow these simple steps.
 
 1.  **Clone the repository:**
     ```sh
-    git clone https://github.com/abhishek0112cs221008/VOYA-Shopping.git
+    git clone https://github.com/abhishek0112cs221008/VOYA.git
     ```
 2.  **Database Setup:**
     * Create a new database in MySQL named `voya_db`.
